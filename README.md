@@ -18,12 +18,3 @@ python3 -m pip install .
 ```
 
 This will install the environment and all necessary dependencies.
-
-### Running
-By default, a `run_simulation.py` script is included in the root of the project folder. This script will initialize an
-environment and step through it using the basic MPC controller. The controller should be able to land the rocket under
-gentle initialization conditions. 
-
-Various arguments can be specified by adding them to the `args` dictionary which is passed to the environment on 
-initialization. For a complete list of arguments, please refer to the `UserArgs` class in
-[env_cfg.py](coco_rocket_lander/env/env_cfg.py).
