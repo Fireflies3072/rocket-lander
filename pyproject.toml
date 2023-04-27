@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "coco-rocket-lander"
+version = "0.0.1"
+description = "A rocket lander gym environment"
+license = "MIT"
+authors = [
+    "Dylan Vogel <dyvogel@student.ethz.ch>",
+    "Gerasimos Maltezos <gmaltezos@student.ethz.ch>"
+]
+readme = "README.md"
+repository = "https://gitlab.ethz.ch/kmoffat/coco_project/"
+packages = [{include = "coco_rocket_lander"}]
+
+
+[tool.poetry.dependencies]
+python = "^3.8"
+gymnasium = {extras = ["box2d"], version = "^0.27.1"}
+numpy = "^1.24.2"
+pygame = "2.1.3.dev8"
+cvxpy = "^1.3.1"
+moviepy = "^1.0.3"
+
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+
