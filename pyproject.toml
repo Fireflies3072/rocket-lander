@@ -15,7 +15,7 @@ packages = [{include = "coco_rocket_lander"}]
 [tool.poetry.dependencies]
 python = "^3.8"
 gymnasium = {extras = ["box2d"], version = "^0.27.1"}
-numpy = "^1.24.2"
+numpy = "1.22.4"
 pygame = "2.1.3.dev8"
 cvxpy = "^1.3.1"
 moviepy = "^1.0.3"
