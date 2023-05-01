@@ -42,21 +42,6 @@ class SystemModel:
         self.state_shape = 6
         self.action_shape = 3
 
-    def get_discrete_linear_system_matrices(self) -> Tuple[np.ndarray, np.ndarray]:
-        """Return the discrete-time linearized system matrices
-
-        Raises:
-            AttributeError: if discretize_system_matrices has not been called first
-
-        Returns:
-            Tuple[np.ndarray, np.ndarray]: A, B
-        """
-
-        if self.Ad is None or self.Bd is None:
-            raise AttributeError(
-                "Ad and Bd matrices are not initialized. Please call `discretize_system_matrices` first"
-            )
-        return self.Ad, self.Bd
 
     def get_continuous_linear_system_matrices(self) -> Tuple[np.ndarray, np.ndarray]:
         """Return the continuous-time linearized system matrices
@@ -144,30 +129,3 @@ class SystemModel:
         # print("\n--Continuous time linear system matrices:")
         # print(f"A=\n{self.A}")
         # print(f"B=\n{self.B}")
-
-    def discretize_system_matrices(self, sample_time: float) -> None:
-        """Exact discretization of the linearized system matrices using the matrix exponential
-
-        Args:
-            sample_time (float): discrete sampling time in seconds
-
-        Raises:
-            AttributeError: if calculate_linear_system_matrices has not been called first
-        """
-
-        if self.A is None or self.B is None:
-            print("Note: A and B matrices have not been initialized. Using the (default) upright equilibrium")
-            self.calculate_linear_system_matrices()
-
-        # exact discretization using matrix exponential
-        self.Ad = scipy.linalg.expm(self.A * sample_time)
-
-        # integrate matrix exponential, multiply with B
-        Ad_int, _ = scipy.integrate.quad_vec(
-            lambda tau: scipy.linalg.expm(self.A * tau), 0, sample_time
-        )
-        self.Bd = Ad_int @ self.B
-
-        # print("\n--Discretized linear system matrices:")
-        # print(f"A=\n{self.Ad}")
-        # print(f"B=\n{self.Bd}")
