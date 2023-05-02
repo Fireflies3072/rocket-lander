@@ -216,8 +216,8 @@ class RocketLander(gym.Env):
             new_state = {
                 "x_dot": self.args.initial_state[2] * self.cfg.width,
                 "y_dot": self.args.initial_state[3] * self.cfg.width,
-                "theta": self.args.initial_state[4] * DEGTORAD,
-                "theta_dot": self.args.initial_state[5] * DEGTORAD,
+                "theta": self.args.initial_state[4],
+                "theta_dot": self.args.initial_state[5],
             }
 
         elif self.args.initial_position is not None:
@@ -235,7 +235,7 @@ class RocketLander(gym.Env):
             pos_y = self.args.initial_position[1] * self.cfg.height
 
             new_state = {
-                "theta": self.args.initial_position[2] * DEGTORAD,
+                "theta": self.args.initial_position[2],
             }
 
         if self.args.random_initial_position:
@@ -258,7 +258,7 @@ class RocketLander(gym.Env):
                 self.args.initial_barge_position[0] * self.cfg.width,
                 self.barge.position[1],
             )
-            self.barge.angle = self.args.initial_barge_position[1] * DEGTORAD
+            self.barge.angle = self.args.initial_barge_position[1]
 
         self.initial_barge_position = list(self.barge.position) + [
             float(self.barge.angle)
@@ -819,11 +819,9 @@ class RocketLander(gym.Env):
             motorSpeed=0,
             referenceAngle=0,
             lowerAngle=self.cfg.max_nozzle_angle
-            * self.cfg.nozzle_angle_limits[0]
-            * DEGTORAD,
+            * self.cfg.nozzle_angle_limits[0],
             upperAngle=self.cfg.max_nozzle_angle
-            * self.cfg.nozzle_angle_limits[1]
-            * DEGTORAD,
+            * self.cfg.nozzle_angle_limits[1],
         )
 
         self.nozzle.joint = self.world.CreateJoint(revolute_joint)
