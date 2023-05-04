@@ -215,8 +215,8 @@ class RocketLander(gym.Env):
             pos_y = self.args.initial_state[1] * self.cfg.height
 
             new_state = {
-                "x_dot": self.args.initial_state[2] * self.cfg.width,
-                "y_dot": self.args.initial_state[3] * self.cfg.width,
+                "x_dot": self.args.initial_state[2],
+                "y_dot": self.args.initial_state[3],
                 "theta": self.args.initial_state[4],
                 "theta_dot": self.args.initial_state[5],
             }
