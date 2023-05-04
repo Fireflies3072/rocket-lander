@@ -67,7 +67,7 @@ class ContactDetector(contactListener):
         for i in range(2):
             if self.env.legs[i] in [contact.fixtureA.body, contact.fixtureB.body]:
                 self.env.legs[i].ground_contact = True
-                if self.env.sea in [contact.fixtureA.body, contact.fixtureB.body]:
+                if self.env.barge not in [contact.fixtureA.body, contact.fixtureB.body]:
                     self.env.game_over = True
 
     def EndContact(self, contact):
@@ -169,6 +169,7 @@ class RocketLander(gym.Env):
     def reset(self, seed=None, options=None):
         """Reset the environment"""
         super().reset(seed=seed)
+        np.random.seed(seed=seed)
 
         self._destroy()
         self.world.contactListener = ContactDetector(self)
