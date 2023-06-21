@@ -432,12 +432,17 @@ class RocketLander(gym.Env):
         # clean up environment
         self.world.contactListener = None
         self._clean_particles(True)
-        self.world.DestroyBody(self.barge)
 
+        self.world.DestroyBody(self.barge)
+        self.barge = None
         self.world.DestroyBody(self.lander)
-        # self.world.DestroyBody(self.nozzle)  # raises an error?
+        self.lander = None
+        self.world.DestroyBody(self.nozzle)
+        self.nozzle = None
         self.world.DestroyBody(self.legs[0])
         self.world.DestroyBody(self.legs[1])
+        self.world.DestroyBody(self.sea)
+        self.sea = None
 
         self.lander_drawlist = []
 
