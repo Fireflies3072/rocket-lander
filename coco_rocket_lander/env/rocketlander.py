@@ -280,6 +280,8 @@ class RocketLander(gym.Env):
         Returns:
             Tuple[np.ndarray, float, bool, bool, dict]: observation, reward, done, _, info
         """
+        assert self.barge is not None, "Please call reset() first!"
+
         if isinstance(action, list):
             action = np.array(action)
 

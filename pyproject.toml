@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "coco-rocket-lander"
-version = "0.0.2"
+version = "0.0.3"
 description = "A rocket lander gym environment"
 license = "MIT"
 authors = [
