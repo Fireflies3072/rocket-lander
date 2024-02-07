@@ -124,7 +124,7 @@ class RocketLander(gym.Env):
                     np.inf,
                     np.inf,
                     self.cfg.theta_limit,
-                    -np.inf,
+                    np.inf,
                     1,
                     1,
                 ]
