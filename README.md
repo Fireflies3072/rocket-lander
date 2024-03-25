@@ -1,4 +1,4 @@
-# Computational Control 2023 Rocket Lander Project
+# Rocket Lander Project
 
 A Box2D Gymnasium environment which simulates a Falcon 9 ocean barge landing
 
