@@ -24,9 +24,9 @@ class SystemModel:
 
         self.env = env
 
-        mass, inertia = env.get_mass_properties()
-        l1, l2 = env.get_dimensional_properties()
-        gravity = -env.world.gravity[1]
+        mass, inertia = env.unwrapped.get_mass_properties()
+        l1, l2 = env.unwrapped.get_dimensional_properties()
+        gravity = -env.unwrapped.world.gravity[1]
 
         self.mass = mass
         self.inertia = inertia
@@ -137,7 +137,7 @@ class SystemModel:
         self.B[5, 2] = b52
 
         # we normalize the applied actions within the allowable input range
-        normalization_u = np.diag([self.env.cfg.main_engine_thrust, self.env.cfg.side_engine_thrust, self.env.cfg.max_nozzle_angle])
+        normalization_u = np.diag([self.env.unwrapped.cfg.main_engine_thrust, self.env.unwrapped.cfg.side_engine_thrust, self.env.unwrapped.cfg.max_nozzle_angle])
 
         self.B = self.B @ normalization_u
 
