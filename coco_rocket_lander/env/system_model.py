@@ -141,10 +141,6 @@ class SystemModel:
 
         self.B = self.B @ normalization_u
 
-        # print("\n--Continuous time linear system matrices:")
-        # print(f"A=\n{self.A}")
-        # print(f"B=\n{self.B}")
-
     def discretize_system_matrices(self, sample_time: float) -> None:
         """Exact discretization of the linearized system matrices using the matrix exponential
 

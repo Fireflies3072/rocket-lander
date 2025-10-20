@@ -1,57 +1,95 @@
-import abc
+from typing import Optional, Tuple
+import math
+import numpy as np
+from .controller_base import ControllerBase
 
-class PID():
-    """ Called from the children of PID_Framework"""
-    def __init__(self, Kp, Ki, Kd):
-        self.Kp = Kp
-        self.Ki = Ki
-        self.Kd = Kd
-        self.accumulated_error = 0
+class PID_Controller(ControllerBase):
+    def __init__(self, kp: float, ki: float, kd: float,
+        min_output: float = -math.inf, max_output: float = math.inf,
+        anti_windup_gain: float = 1.0) -> None:
 
-    def increment_intregral_error(self, error, pi_limit=3):
-        self.accumulated_error = self.accumulated_error + error
-        if (self.accumulated_error > pi_limit):
-            self.accumulated_error = pi_limit
-        elif (self.accumulated_error < pi_limit):
-            self.accumulated_error = -pi_limit
+        self.kp = kp
+        self.ki = ki
+        self.kd = kd
+        self.min_output = min_output
+        self.max_output = max_output
+        self.anti_windup_gain = anti_windup_gain
 
-    def compute_output(self, error, dt_error):
-        self.increment_intregral_error(error)
-        return self.Kp * error + self.Ki * self.accumulated_error + self.Kd * dt_error
+        self._integrator = 0.0
+        self._prev_measurement = None
 
-class PID_Framework():
-    """ Sets the skeleton code for the actual pid algorithms (children) to inherit. """
+    def reset(self, initial_state: Optional[float] = None) -> None:
+        self._integrator = 0.0
+        self._prev_measurement = initial_state
 
-    @abc.abstractmethod
-    def pid_algorithm(self, s, x_target, y_target):
-        pass
+    def update(self, measurement: float, target: float, dt: float = 1.0) -> float:
+        error = target - measurement
+        # Proportional
+        p = self.kp * error
+        # Derivative on measurement to avoid derivative kick
+        if self._prev_measurement is None or dt <= 0:
+            d = 0.0
+        else:
+            d_measurement = (measurement - self._prev_measurement) / dt
+            d = self.kd * d_measurement
+        self._prev_measurement = measurement
+        # Integral
+        i = self._integrator
+        #  Use anti-windup back-calculation to avoid further saturation
+        unlimited_output = p + i + d
+        limited_output = min(self.max_output, max(self.min_output, unlimited_output))
+        windup_error = limited_output - unlimited_output
+        self._integrator += (self.ki * error * dt) + (self.anti_windup_gain * windup_error * dt)
 
-class PID_Benchmark(PID_Framework):
+        return limited_output
+    
+    def update_by_error(self, error, dt_error, dt: float = 1.0):
+        # Proportional
+        p = self.kp * error
+        # Derivative
+        d = self.kd * dt_error
+        # Integral
+        i = self._integrator
+        #  Use anti-windup back-calculation to avoid further saturation
+        unlimited_output = p + i + d
+        limited_output = min(self.max_output, max(self.min_output, unlimited_output))
+        windup_error = limited_output - unlimited_output
+        self._integrator += (self.ki * error * dt) + (self.anti_windup_gain * windup_error * dt)
+
+        return limited_output
+
+class PID_RocketLander(ControllerBase):
     """ Tuned PID Benchmark against which all other algorithms are compared. """
 
-    def __init__(self, Fe_PID_params, psi_PID_params, FsTheta_PID_params):
-        super(PID_Benchmark, self).__init__()
-        self.Fe_PID = PID(Fe_PID_params[0], Fe_PID_params[1], Fe_PID_params[2])
-        self.psi_PID = PID(psi_PID_params[0], psi_PID_params[1], psi_PID_params[2])
-        self.Fs_theta_PID = PID(FsTheta_PID_params[0], FsTheta_PID_params[1], FsTheta_PID_params[2])
+    def __init__(self, Fe_PID_params, psi_PID_params, FsTheta_PID_params,
+        min_output: Tuple = None, max_output: Tuple = None):
 
-    def pid_algorithm(self, s, x_target=None, y_target=None):
-        dx, dy, vel_x, vel_y, theta, omega, legContact_left, legContact_right = s
-        if x_target is not None:
-            dx = dx - x_target
-        if y_target is not None:
-            dy = dy - y_target
+        self.Fe_PID = PID_Controller(*Fe_PID_params)
+        self.psi_PID = PID_Controller(*psi_PID_params)
+        self.Fs_theta_PID = PID_Controller(*FsTheta_PID_params)
+        self.min_output = np.array(min_output) if min_output is not None else np.full(3, -math.inf)
+        self.max_output = np.array(max_output) if max_output is not None else np.full(3, math.inf)
+
+    def reset(self):
+        self.Fe_PID.reset()
+        self.psi_PID.reset()
+        self.Fs_theta_PID.reset()
+
+    def update(self, measurement, target):
+        x, y, vel_x, vel_y, theta, omega, legContact_left, legContact_right = measurement
+        x_target, y_target = target[0], target[1]
+        dx = x - x_target
+        dy = y - y_target
         # ------------------------------------------
         y_ref = -0.1  # Adjust speed
         y_error = y_ref - dy + 0.1 * dx
         y_dterror = -vel_y + 0.1 * vel_x
-
-        Fe = self.Fe_PID.compute_output(y_error, y_dterror) * (abs(dx) * 50 + 1)
+        Fe = self.Fe_PID.update_by_error(y_error, y_dterror) * (abs(dx) * 50 + 1)
         # ------------------------------------------
         theta_ref = 0
         theta_error = theta_ref - theta + 0.2 * dx  # theta is negative when slanted to the north east
         theta_dterror = -omega + 0.2 * vel_x
-        Fs_theta = self.Fs_theta_PID.compute_output(theta_error, theta_dterror)
+        Fs_theta = self.Fs_theta_PID.update_by_error(theta_error, theta_dterror)
         Fs = -Fs_theta  # + Fs_x
         # ------------------------------------------
         theta_ref = 0
@@ -60,93 +98,71 @@ class PID_Benchmark(PID_Framework):
         if (abs(dx) > 0.01 and dy < 0.5):
             theta_error = theta_error - 0.06 * dx  # theta is negative when slanted to the right
             theta_dterror = theta_dterror - 0.06 * vel_x
-        psi = self.psi_PID.compute_output(theta_error, theta_dterror)
+        psi = self.psi_PID.update_by_error(theta_error, theta_dterror)
 
         if legContact_left and legContact_right:  # legs have contact
             Fe = 0
             Fs = 0
+        
+        # Clip to output limits
+        output = np.array([Fe, Fs, psi], dtype=np.float64)
+        output = np.clip(output, self.min_output, self.max_output)
+        return output
 
-        return Fe, Fs, psi
 
+class PID_LunarLander(ControllerBase):
+    """Simple PID for LunarLander continuous: vertical thrust + attitude control.
 
-class PID_Heuristic_Benchmark(PID_Framework):
-    """ Heuristic PID Benchmark """
+    - vertical_pid: controls vertical speed/altitude using main engine
+    - angle_pid: stabilizes angle and tracks an angle target derived from lateral error
+    """
 
-    def __init__(self, ):
-        super(PID_Heuristic_Benchmark, self).__init__()
-        self.Fe = PID(10, 0, 10)
-        self.psi = PID(0.01, 0, 0.01)
-        self.Fs = PID(10, 0, 30)
+    def __init__(self,
+        vertical_PID_params: Tuple[float, float, float],
+        angle_PID_params: Tuple[float, float, float],
+        min_output: Tuple,
+        max_output: Tuple,
+    ) -> None:
+        self.vertical_pid = PID_Controller(*vertical_PID_params)
+        self.angle_pid = PID_Controller(*angle_PID_params)
+        self.min_output = np.array(min_output, dtype=np.float64)
+        self.max_output = np.array(max_output, dtype=np.float64)
 
-    def pid_algorithm(self, s, x_target, y_target):
-        dx, dy, vel_x, vel_y, theta, omega, legContact_left, legContact_right = s
+    def reset(self) -> None:
+        self.vertical_pid.reset()
+        self.angle_pid.reset()
+
+    def update(self, measurement, target):
+        # measurement: [x, y, x_dot, y_dot, theta, theta_dot, left_contact, right_contact]
+        x, y, x_dot, y_dot, theta, theta_dot = measurement[:6]
+        x_target, y_target = target[0], target[1]
+        dx = x - x_target
+        dy = y - y_target
+
+        # Vertical control: aim for target height with small vertical velocity
+        y_error = y_target - y
+        y_dterror = -y_dot
+        main_thrust = self.vertical_pid.update_by_error(y_error, y_dterror)
+
+        # Lateral/attitude: compute desired angle to reduce lateral error and velocity
+        angle_target = -0.4 * (x - x_target) - 0.2 * x_dot
+        angle_error = angle_target - theta
+        angle_dterror = -theta_dot
+        torque_cmd = self.angle_pid.update_by_error(angle_error, angle_dterror)
+
         # ------------------------------------------
-        x_error = x_target - theta
-        x_dterror = -omega
-        Fs = -self.Fs.compute_output(x_error, x_dterror)
-        # ------------------------------------------
-        y_error = y_target - dy
-        y_dterror = -vel_y
-        Fe = self.Fe.compute_output(y_error, y_dterror) - 1
-        # ------------------------------------------
-        theta_error = theta
-        theta_dterror = -omega - vel_x
-        psi = self.psi.compute_output(theta_error, theta_dterror)
-        # ------------------------------------------
-        if legContact_left and legContact_right:  # legs have contact
-            Fe = 0
-
-        return Fe, Fs, psi
-
-
-class PID_psi(PID_Framework):
-    """ PID for controlling just the angle of the rocket nozzle. """
-
-    def __init__(self):
-        super(PID_psi, self).__init__()
-        self.psi = PID(0.1, 0, 0.01)
-
-    def pid_algorithm(self, s, x_target=None, y_target=None):
-        dx, dy, vel_x, vel_y, theta, omega, legContact_left, legContact_right = s
-        theta_ref = 0
-        theta_error = -theta_ref + theta
-        theta_dterror = omega
-        if (abs(dx) > 0.01 and dy < 0.5):
-            theta_error = theta_error - 0.06 * dx  # theta is negative when slanted to the right
-            theta_dterror = theta_dterror - 0.06 * vel_x
-        psi = self.psi.compute_output(theta_error, theta_dterror)
-        return psi
-
-class PID_Fs(PID_Framework):
-    """ PID for controlling just the Fs/theta angle of the rocket nozzle. """
-
-    def __init__(self):
-        super(PID_Fs, self).__init__()
-        self.Fs = PID(5, 0.01, 6)
-
-    def pid_algorithm(self, s, x_target=None, y_target=None):
-        dx, dy, vel_x, vel_y, theta, omega, legContact_left, legContact_right = s
-        theta_ref = 0
-        theta_error = theta_ref - theta + 0.2 * dx  # theta is negative when slanted to the north east
-        theta_dterror = -omega + 0.2 * vel_x
-        Fs = self.Fs.compute_output(theta_error, theta_dterror)
-        if legContact_left and legContact_right:  # legs have contact
-            Fs = 0
-        return -Fs
-
-class PID_Fe(PID_Framework):
-    """ PID for controlling just the Fs/theta angle of the rocket nozzle. """
-
-    def __init__(self):
-        super(PID_Fe, self).__init__()
-        self.Fe = PID(10, 0, 10)
-
-    def pid_algorithm(self, s, x_target=None, y_target=None):
-        dx, dy, vel_x, vel_y, theta, omega, legContact_left, legContact_right = s
         y_ref = -0.1  # Adjust speed
         y_error = y_ref - dy + 0.1 * dx
         y_dterror = -vel_y + 0.1 * vel_x
-        Fe = self.Fe.compute_output(y_error, y_dterror) * (abs(dx) * 50 + 1)
-        if legContact_left and legContact_right:  # legs have contact
-            Fe = 0
-        return Fe
+        Fe = self.Fe_PID.update_by_error(y_error, y_dterror) * (abs(dx) * 50 + 1)
+        # ------------------------------------------
+        theta_ref = 0
+        theta_error = theta_ref - theta + 0.2 * dx  # theta is negative when slanted to the north east
+        theta_dterror = -omega + 0.2 * vel_x
+        Fs_theta = self.Fs_theta_PID.update_by_error(theta_error, theta_dterror)
+        Fs = -Fs_theta  # + Fs_x
+
+        # Clip and output [main, lateral]
+        output = np.array([main_thrust, torque_cmd], dtype=np.float64)
+        output = np.clip(output, self.min_output, self.max_output)
+        return output

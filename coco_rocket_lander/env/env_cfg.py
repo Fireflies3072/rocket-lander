@@ -150,3 +150,9 @@ class EnvConfig:
 
     # disturbances
     wind_force = main_engine_thrust / 20
+
+    # contact sensing
+    # Radius (in world units) of a non-colliding sensor circle at each leg tip
+    # to consider the leg "in contact" when overlapping the barge/sea.
+    # Increase to make contact easier to trigger; decrease for stricter contact.
+    leg_contact_sensor_radius: float = 3

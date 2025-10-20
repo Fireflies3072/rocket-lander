@@ -793,6 +793,28 @@ class RocketLander(gym.Env):
             leg.joint = self.world.CreateJoint(revolute_joint)
             self.legs.append(leg)
 
+            # Add a non-colliding sensor at the leg tip to detect proximity contact
+            # The sensor increases contact sensitivity based on EnvConfig.leg_contact_sensor_radius
+            try:
+                sensor_radius = self.cfg.leg_contact_sensor_radius / self.cfg.scale
+                leg.CreateFixture(
+                    fixtureDef(
+                        shape=circleShape(
+                            radius=sensor_radius,
+                            pos=(0, -self.cfg.leg_height / (2 * self.cfg.scale)),
+                        ),
+                        density=0.0,
+                        friction=0.0,
+                        restitution=0.0,
+                        isSensor=True,
+                        categoryBits=0x0020,
+                        maskBits=0x0003,
+                    )
+                )
+            except Exception:
+                # Fallback: if sensor creation fails (older Box2D), ignore silently
+                pass
+
         # nozzle
         self.nozzle = self.world.CreateDynamicBody(
             position=(pos_x, pos_y),
