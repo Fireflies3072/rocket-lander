@@ -73,6 +73,8 @@ class DeePC_Controller(ControllerBase):
         self.T_f = int(T_f)
         self.Q = np.tile(Q, T_f) if Q is not None else np.ones((y_size * T_f,))
         self.R = np.tile(R, T_f) if R is not None else np.ones((u_size * T_f,))
+        self.Q_sqrt = np.sqrt(self.Q)
+        self.R_sqrt = np.sqrt(self.R)
         self.lambda_g = float(lambda_g)
         self.lambda_y = float(lambda_y)
         self.min_output = np.array(min_output) if min_output is not None else np.full(u_size, -np.inf)
@@ -155,8 +157,8 @@ class DeePC_Controller(ControllerBase):
         sigma_y = cp.Variable((self.y_size * self.T_ini,))
         # Define objective
         objective = cp.Minimize(
-            cp.sum_squares(cp.multiply(self.Q, (self.Y_f @ g - y_target)))
-            + cp.sum_squares(cp.multiply(self.R, self.U_f @ g))
+            cp.sum_squares(cp.multiply(self.Q_sqrt, (self.Y_f @ g - y_target)))
+            + cp.sum_squares(cp.multiply(self.R_sqrt, self.U_f @ g))
             + self.lambda_g * cp.sum_squares(g)
             + self.lambda_y * cp.sum_squares(sigma_y)
         )
@@ -168,7 +170,7 @@ class DeePC_Controller(ControllerBase):
 
         # Solve for g
         problem = cp.Problem(objective, constraints)
-        problem.solve(solver=cp.SCS)
+        problem.solve(solver=cp.OSQP)
         g = g.value
         sigma_y = sigma_y.value
 

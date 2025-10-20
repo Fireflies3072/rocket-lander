@@ -22,7 +22,7 @@ engine_vector_pid_params = [0.085, 0.001, 10.55]
 
 # PID controller
 pid = PID_RocketLander(engine_pid_params, side_engine_pid_params, engine_vector_pid_params,
-                        env.action_space.low, env.action_space.high)
+                        min_output=env.action_space.low, max_output=env.action_space.high)
 
 # Define the target state for the rocket
 # Target: land at the landing position with zero velocity and angle

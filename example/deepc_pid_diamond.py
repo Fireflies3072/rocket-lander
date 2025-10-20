@@ -8,7 +8,7 @@ from coco_rocket_lander.algs.pid import PID_RocketLander
 from coco_rocket_lander.algs.deepc import DeePC_Controller, DeePC_Analyzer
 
 args = {
-    "initial_position": (0.4, 0.8, 0.0)
+    # "initial_position": (0.4, 0.8, 0.0)
 }
 
 # --- Configuration ---
@@ -69,7 +69,7 @@ for i in range(200):
     else:
         target = initial_position + np.array([move_distance, -move_distance]) + np.array([-move_distance, move_distance]) * ((i - 150) / 50)
     # target += np.random.randn(2)
-    action = pid.update(state, target)
+    action = pid.update(state[:6], target)
     
     # Apply the action and get the new observation
     next_state, _, done, _, _ = env.step(action)

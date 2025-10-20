@@ -7,7 +7,8 @@ import numpy as np
 from coco_rocket_lander.algs.mpc import MPC_RocketLander
 
 args = {
-    "initial_position": (31/33.333, 20/26.666, 0)
+    "initial_position": (0.5, 0.9, 0.4)
+    # "initial_position": (31/33.333, 20/26.666, 0)
 }
 
 # --- Environment Setup ---
