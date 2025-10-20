@@ -28,9 +28,9 @@ y_size = 6
 
 # PID controller
 engine_pid_params = [10, 0, 10]
-engine_vector_pid_params = [0.085, 0.001, 10.55]
 side_engine_pid_params = [5, 0, 6]
-pid = PID_RocketLander(engine_pid_params, engine_vector_pid_params, side_engine_pid_params,
+engine_vector_pid_params = [0.085, 0.001, 10.55]
+pid = PID_RocketLander(engine_pid_params, side_engine_pid_params, engine_vector_pid_params,
                         env.action_space.low, env.action_space.high)
 
 # DeePC controller
@@ -102,7 +102,7 @@ for i in range(2000):
     action, y_next, g, sigma_y = deepc._update_complete(state[:6], reference)
     # If the legs are in contact, set both main and side engine thrusts to 0
     if state[6] and state[7]:
-        action[:2] = 0
+        action[:] = 0
     
     # Apply the calculated action to the environment
     next_state, rewards, done, _, info = env.step(action)

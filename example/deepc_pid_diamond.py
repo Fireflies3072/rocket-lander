@@ -28,9 +28,9 @@ y_size = 6
 
 # PID controller
 engine_pid_params = [10, 0, 10]
-engine_vector_pid_params = [0.085, 0.001, 10.55]
 side_engine_pid_params = [5, 0, 6]
-pid = PID_RocketLander(engine_pid_params, engine_vector_pid_params, side_engine_pid_params,
+engine_vector_pid_params = [0.085, 0.001, 10.55]
+pid = PID_RocketLander(engine_pid_params, side_engine_pid_params, engine_vector_pid_params,
                         env.action_space.low, env.action_space.high)
 
 # DeePC controller
