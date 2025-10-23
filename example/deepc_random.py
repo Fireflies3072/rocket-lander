@@ -9,7 +9,7 @@ from coco_rocket_lander.algs.pid import PID_RocketLander
 from coco_rocket_lander.algs.deepc import DeePC_Controller, DeePC_Analyzer
 
 args = {
-    "initial_position": (0.4, 0.8, 0.0)
+    # "initial_position": (0.4, 0.8, 0.0)
 }
 
 # --- Configuration ---
@@ -19,7 +19,6 @@ T_f = 10
 
 # --- Environment Setup ---
 env = gym.make("coco_rocket_lander/RocketLander-v0", render_mode="rgb_array", args=args)
-env = gym.wrappers.RecordVideo(env, 'video', episode_trigger=lambda x: True, name_prefix="rocket_lander")
 
 # Get system dimensions from the environment
 # u_size: dimension of action space (main engine, side engine, nozzle angle)
@@ -58,7 +57,7 @@ print("--- Starting Phase 1: Data Collection ---")
 collected = 0
 
 state, _ = env.reset()
-while collected < 200:
+while collected < 2000:
     # Run only a few steps for each episode
     for _ in range(200):
         action = np.array([
@@ -86,6 +85,10 @@ print(f"Collected {deepc.U_p.shape[1]} samples")
 # ===================================================================
 print("\n--- Starting Phase 2: DeePC Control ---")
 
+env = gym.make("coco_rocket_lander/RocketLander-v0", render_mode="rgb_array", args=args)
+env = gym.wrappers.RecordVideo(env, 'video', episode_trigger=lambda x: True, name_prefix="deepc_random")
+state, _ = env.reset()
+
 # Reset the environment and the controller's history for a fresh start
 deepc.reset(initial_y=state[:6])
 # Define the reference (target) state for the rocket
@@ -94,9 +97,8 @@ landing_position = env.unwrapped.get_landing_position()
 reference = np.zeros(y_size)
 reference[0] = landing_position[0]
 reference[1] = landing_position[1]
-hover_state = state[:6]
 
-for i in range(2000):
+for i in range(10000):
     # Let DeePC calculate the optimal action
     action, y_next, g, sigma_y = deepc._update_complete(state[:6], reference)
     # If the legs are in contact, set both main and side engine thrusts to 0

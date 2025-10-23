@@ -9,6 +9,7 @@ from coco_rocket_lander.algs.deepc import DeePC_Controller, DeePC_Analyzer
 
 args = {
     # "initial_position": (0.4, 0.8, 0.0)
+    "initial_position": (0.25, 0.5, 0.0)
 }
 
 # --- Configuration ---
@@ -39,7 +40,7 @@ deepc = DeePC_Controller(
     y_size=y_size,
     T_ini=T_ini,
     T_f=T_f,
-    Q=[10, 1, 1, 1, 1e3, 1],
+    Q=[10, 10, 1, 1, 1e3, 1],
     R=[1.5, 0.01, 0.01],
     lambda_g=1e-2,
     lambda_y=1e5,

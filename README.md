@@ -1,3 +1,6 @@
+# There is a known problem with DeePC implementation, but this ropo will no longer be updating. Please visit (https://github.com/Fireflies3072/PyController)
+
+
 # Rocket Lander Project
 
 A Box2D Gymnasium environment which simulates a Falcon 9 ocean barge landing
